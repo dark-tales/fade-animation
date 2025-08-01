@@ -1,17 +1,15 @@
 // Fade Animation Module for Foundry VTT v13
 
-// log message at init
 Hooks.once('init', () => {
     console.log('Fade Animation | Initializing module');
 });
 
-// once app ready create class
 Hooks.once('ready', () => {
     console.log('Fade Animation | Module ready');
-    // defines fadeAnimation class
+    
     class FadeAnimation {
         static ID = 'fade-animation';
-        // async function to create a div overlay element with black background
+        
         static async performFade(startTime = null) {
             console.log('Performing fade animation');
             
@@ -29,26 +27,75 @@ Hooks.once('ready', () => {
                 pointer-events: none;
                 transition: opacity 1s ease-in-out;
             `;
-            // append overlay to document
+            
             document.body.appendChild(overlay);
             
-            // Hide loading notifications
+            // Hide loading notifications - more comprehensive approach
             const hideLoadingNotification = () => {
-                const loadingBar = document.getElementById('loading');
-                const loadingOverlay = document.querySelector('#loading-bar, .loading-bar, .scene-loading, [data-tooltip="Loading..."]');
-                if (loadingBar) loadingBar.style.display = 'none';
-                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                // Target multiple possible loading elements
+                const selectors = [
+                    '#loading',
+                    '#loading-bar', 
+                    '.loading-bar',
+                    '.scene-loading',
+                    '[data-tooltip="Loading..."]',
+                    '#notifications .notification',
+                    '.notification.info',
+                    '.notifications-container .notification'
+                ];
+                
+                selectors.forEach(selector => {
+                    const elements = document.querySelectorAll(selector);
+                    elements.forEach(el => {
+                        if (el && (el.textContent?.includes('Loading') || el.textContent?.includes('loading'))) {
+                            el.style.display = 'none';
+                            el.style.visibility = 'hidden';
+                            el.style.opacity = '0';
+                        }
+                    });
+                });
+                
+                // Also hide any progress bars
+                const progressBars = document.querySelectorAll('progress, .progress, .progress-bar');
+                progressBars.forEach(bar => {
+                    bar.style.display = 'none';
+                    bar.style.visibility = 'hidden';
+                });
+                
+                // Hide Foundry's specific loading overlay if it exists
+                const foundryLoading = document.querySelector('#loading, .loading-overlay, .scene-loading-overlay');
+                if (foundryLoading) {
+                    foundryLoading.style.display = 'none';
+                    foundryLoading.style.visibility = 'hidden';
+                    foundryLoading.style.opacity = '0';
+                }
             };
             
             const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
             
             try {
                 overlay.offsetHeight;
+                
+                // Hide loading notifications immediately and continuously
                 hideLoadingNotification();
+                
+                // Set up observer to hide loading notifications that appear during animation
+                const observer = new MutationObserver(() => {
+                    hideLoadingNotification();
+                });
+                
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                    attributeFilter: ['style', 'class']
+                });
                 
                 // Phase 1: Fade in (1 second)
                 overlay.style.opacity = '1';
                 await wait(1000);
+                
+                // Continue hiding during wait phase
+                hideLoadingNotification();
                 
                 // Phase 2: Wait (1 second)
                 await wait(1000);
@@ -57,6 +104,8 @@ Hooks.once('ready', () => {
                 overlay.style.opacity = '0';
                 await wait(1000);
                 
+                // Stop observing and clean up
+                observer.disconnect();
                 overlay.remove();
                 
             } catch (error) {
@@ -90,11 +139,6 @@ Hooks.once('ready', () => {
             // Execute for GM immediately (no await to start instantly)
             this.performFade();
             
-            if (connectedPlayers.length > 0) {
-                ui.notifications.info(`Instant fade animation sent to ${connectedPlayers.length} player(s)`);
-            } else {
-                ui.notifications.info("No players connected");
-            }
         }
     }
     
@@ -128,6 +172,6 @@ Hooks.once('ready', () => {
         FadeAnimation.triggerFadeForAll();
     };
     
-    ui.notifications.info("Fade Animation module loaded successfully");
+    
     console.log('Fade Animation | Module fully loaded and ready');
 });
