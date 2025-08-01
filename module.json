@@ -1,0 +1,22 @@
+{
+  "id": "fade-animation",
+  "title": "Fade Animation",
+  "description": "Provides a fade animation that GMs can trigger for all players",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "authors": [
+    {
+      "name": "Concept by Lowkeyframe, vibe coded by Claude AI"
+    }
+  ],
+  "scripts": [
+    "src/fade-animation.js"
+  ],
+  "socket": true,
+  "url": "",
+  "manifest": "",
+  "download": ""
+}
