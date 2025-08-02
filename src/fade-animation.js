@@ -122,23 +122,22 @@ Hooks.once('ready', () => {
                 return;
             }
             
-            // Get all connected players (excluding GM)
-            const connectedPlayers = game.users.filter(u => u.active && !u.isGM);
+            // Get all connected users (including GM this time)
+            const connectedUsers = game.users.filter(u => u.active);
             
-            // Send to players immediately
-            if (connectedPlayers.length > 0) {
+            if (connectedUsers.length > 0) {
+                // Send to everyone including GM - no local execution
                 game.socket.emit('module.fade-animation', {
                     type: 'TRIGGER_FADE',
                     senderId: game.user.id,
                     timestamp: Date.now()
                 });
                 
-                console.log(`Sent instant fade animation to ${connectedPlayers.length} players`);
+                console.log(`Sent instant fade animation to ${connectedUsers.length} users (including GM)`);
+                ui.notifications.info(`Fade animation sent to ${connectedUsers.length} user(s) via socket`);
+            } else {
+                ui.notifications.info("No users connected");
             }
-            
-            // Execute for GM immediately (no await to start instantly)
-            this.performFade();
-            
         }
     }
     
@@ -147,16 +146,11 @@ Hooks.once('ready', () => {
         console.log('Socket received by user:', game.user.name, 'Data:', data);
         
         if (data.type === 'TRIGGER_FADE') {
-            if (data.senderId === game.user.id) {
-                console.log('Ignoring message - sent by current user');
-                return;
-            }
+            // Execute for ALL users (including the GM who sent it)
+            console.log('Executing fade animation for user:', game.user.name);
             
-            console.log('Executing instant fade animation for user:', game.user.name);
-            
-            // Execute immediately (no await)
             FadeAnimation.performFade().then(() => {
-                console.log('Instant fade animation completed for user:', game.user.name);
+                console.log('Fade animation completed for user:', game.user.name);
             }).catch(error => {
                 console.error('Fade animation failed for user:', game.user.name, error);
             });
@@ -172,6 +166,6 @@ Hooks.once('ready', () => {
         FadeAnimation.triggerFadeForAll();
     };
     
-    
+    ui.notifications.info("Fade Animation module loaded successfully");
     console.log('Fade Animation | Module fully loaded and ready');
 });
